@@ -1,0 +1,10 @@
+version: '3'
+
+services: 
+  SrvBackend: 
+    build: 
+      context: "."
+      dockerfile: SrvBackend/Dockerfile
+    image: srvbackend
+    ports:
+      - "8080:80"
