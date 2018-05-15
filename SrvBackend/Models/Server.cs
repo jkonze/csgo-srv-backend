@@ -4,16 +4,30 @@ using System.Linq;
 using System.Net;
 using CoreRCON;
 using CoreRCON.PacketFormats;
+using CoreRCON.Parsers.Standard;
 
 namespace SrvBackend.Models
 {
     public class Server
     {
-        public Server(String ip, ushort port)
+        public Server(String ip, ushort port, string password, string displayName)
         {
             Ip = IPAddress.Parse(ip);
             Port = port;
+            Password = password;
+            DisplayName = displayName;
         }
+
+        public string DisplayName { get; set; }
+
+        private RCON _connection => new RCON(Ip, Port, Password);
+
+        private Status _status
+        {
+            get { return _connection.SendCommandAsync<Status>("status").Result; }
+        }
+
+        private string Password { get; }
 
         private SourceQueryInfo Info =>
             (SourceQueryInfo) ServerQuery.Info(Ip, Port, ServerQuery.ServerType.Source).Result;
@@ -21,6 +35,7 @@ namespace SrvBackend.Models
         public string Name => Info.Name;
 
         public bool IsRunning => Info != null ? true : false;
+
         public string Map => Info.Map;
 
         public byte ActivePlayers => Info.Players;
@@ -48,6 +63,25 @@ namespace SrvBackend.Models
         }
 
         public bool IsVacSecured => Info.VAC == ServerVAC.Secured ? true : false;
+
+        public string[] Tags => _status.Tags;
+
+        public string Version => _status.Version;
+
+        public string Status
+        {
+            get
+            {
+                if (_status.Hostname != null)
+                {
+                    return "Everything is ok.";
+                }
+                else
+                {
+                    return "Woah, something is wrong";
+                }
+            }
+        }
 
         [Required] public IPAddress Ip { get; }
 

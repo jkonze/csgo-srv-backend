@@ -6,5 +6,5 @@ RUN dotnet publish SrvBackend --output /output
 FROM build
 COPY --from=build /output /app
 WORKDIR /app
-EXPOSE 5000
+EXPOSE 80
 ENTRYPOINT [ "dotnet", "SrvBackend.dll"]

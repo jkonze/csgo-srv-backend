@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 namespace SrvBackend.Models {
     public class ServerCredentials{
 
-        public string ServerId {get; set;}
+        public string ServerCredentialsId {get; set;}
 
         public string DisplayName {get; set;}
 

@@ -1,6 +1,12 @@
-﻿using CoreRCON;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Security.Cryptography.X509Certificates;
+using CoreRCON;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Clients.ActiveDirectory;
+using SrvBackend.Helpers;
 using SrvBackend.Models;
 
 namespace SrvBackend.Controllers
@@ -8,89 +14,139 @@ namespace SrvBackend.Controllers
     [Route("api/[controller]")]
     public class ServerController : Controller
     {
+        private readonly CSGOContext _ctx;
+
+        private readonly Admin _admin;
+
+        public ServerController(CSGOContext ctx)
+        {
+            _ctx = ctx;
+            _admin = new Admin(HttpContext.User.Claims);
+        }
+
         [Authorize]
         [HttpGet("{id}")]
-        public IActionResult ServerInfo(string id){
+        public IActionResult ServerInfo(string id)
+        {
             // Get User ID from HttpContext
 
-            // Get server from DB => by id and userID
+            var serverCredentials = _ctx.Servers.Where(s => s.AdminId == _admin.AdminId).First(s => s.ServerCredentialsId == id);
 
-            // return server object
+            if (serverCredentials != null)
+            {
+                var server = new Server(serverCredentials.IpAddress, serverCredentials.Port,
+                    serverCredentials.Password, serverCredentials.DisplayName);
+                return Ok(server);
+            }
 
-            return BadRequest();
-
+            return NotFound();
         }
+
         [Authorize]
         [HttpPost]
-        public IActionResult AddServer([FromBody] ServerCredentials srvCredentials) {
-         // get User ID from Context
-         
-         // add user ID to credentials object
+        public IActionResult AddServer([FromBody] ServerCredentials srvCredentials)
+        {
+            if (ModelState.IsValid)
+            {
+                // get User ID from Context
 
-         // save credentials
+                // add user ID to credentials object
+                srvCredentials.AdminId = _admin.AdminId;
 
-         // connect to server and create server object
+                _ctx.Servers.Add(srvCredentials);
+                // save credentials
+                _ctx.SaveChanges();
 
-            return BadRequest();
+                // connect to server and create server object
+                var server = new Server(srvCredentials.IpAddress, srvCredentials.Port, srvCredentials.Password,
+                    srvCredentials.DisplayName);
+                return Ok(server);
+            }
 
+            return BadRequest(ModelState);
         }
 
         [Authorize]
         [HttpPut]
-        public IActionResult UpdateServer([FromBody] ServerCredentials srvCredentials){
+        public IActionResult UpdateServer([FromBody] ServerCredentials srvCredentials)
+        {
             //get userId from Context
-            
+
             // find server By ID && userId
+            if (_ctx.Servers.Any(x => x.ServerCredentialsId == srvCredentials.ServerCredentialsId))
+            {
+                _ctx.Servers.Update(srvCredentials);
+                _ctx.SaveChanges();
+            }
 
             // udate credentials object
 
             // save credentails object
 
             // return Server Object
-            
-            return BadRequest();
-
+            var server = new Server(srvCredentials.IpAddress, srvCredentials.Port, srvCredentials.Password,
+                srvCredentials.DisplayName);
+            return Ok(server);
         }
 
         [Authorize]
         [HttpDelete("{id}")]
-        public IActionResult DeleteServer(string id){
+        public IActionResult DeleteServer(string id)
+        {
+            var server = _ctx.Servers.Where(x => x.AdminId == _admin.AdminId).First(x => x.ServerCredentialsId == id);
+            _ctx.Servers.Remove(server);
             // get user from context
 
             // find servercredentials by userId && id
 
             // delete
 
+            return Ok();
             // return oK 
-            
-            return BadRequest();
-
         }
 
         [Authorize]
         [HttpGet("list")]
-        public IActionResult ServerList(){
+        public IActionResult ServerList()
+        {
             // get userID from context
 
+            var relatedServers = _ctx.Servers.Where(x => x.AdminId == _admin.AdminId);
+
+            List<string> serverIdList = new List<string>();
+            foreach (var server in relatedServers)
+            {
+                serverIdList.Add(server.ServerCredentialsId);
+            }
             // find all credentials by userId
 
-            // return all server Ids as array
-            
-            return BadRequest();
+            return Ok(relatedServers);
 
+            // return all server Ids as array
+
+            return BadRequest();
         }
 
         [Authorize]
         [HttpPost("exec")]
-        public IActionResult ExecuteCommand([FromBody] Command cmd){
+        public IActionResult ExecuteCommand([FromBody] Command cmd)
+        {
             // find credentials by user id && server id
+            var server = _ctx.Servers.Where(x => x.AdminId == _admin.AdminId)
+                .First(x => x.ServerCredentialsId == cmd.ServerId);
 
             // execute command
-
-            // return result
-            
-            return BadRequest();
-
+            if (server != null)
+            {
+                // return result
+                var rcon = new RCON(IPAddress.Parse(server.IpAddress), server.Port, server.Password);
+                var res = rcon.SendCommandAsync(cmd.Cmd).Result;
+                return Ok(res);
+            }
+            else
+            {
+                return NotFound();
+            }
         }
     }
 }

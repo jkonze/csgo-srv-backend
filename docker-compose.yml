@@ -7,4 +7,12 @@ services:
       dockerfile: SrvBackend/Dockerfile
     image: srvbackend
     ports:
-      - "8080:5000"
+      - "8080:80"
+    links: 
+      - "db:database"
+  db:
+    ports: 
+         - "3306"
+    environment: 
+      MYSQL_ROOT_PASSWORD: root
+    image: mariadb
