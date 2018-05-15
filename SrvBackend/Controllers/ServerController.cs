@@ -8,47 +8,89 @@ namespace SrvBackend.Controllers
     [Route("api/[controller]")]
     public class ServerController : Controller
     {
-        [HttpPost("info")]
-        public IActionResult ServerInfo([FromBody] ServerDTO serverDto)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+        [Authorize]
+        [HttpGet("{id}")]
+        public IActionResult ServerInfo(string id){
+            // Get User ID from HttpContext
 
-            var server = new Server(serverDto.IpAddress, serverDto.Port);
-            return Ok(server);
+            // Get server from DB => by id and userID
+
+            // return server object
+
+            return BadRequest();
+
         }
+        [Authorize]
+        [HttpPost]
+        public IActionResult AddServer([FromBody] ServerCredentials srvCredentials) {
+         // get User ID from Context
+         
+         // add user ID to credentials object
 
-        [HttpPost("info/detail")]
-        public IActionResult ServerDetailedInfo([FromBody] ServerDTO serverDto)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-            
-            var server = new Server(serverDto.IpAddress, serverDto.Port);
-            return Ok(server);
+         // save credentials
+
+         // connect to server and create server object
+
+            return BadRequest();
 
         }
 
         [Authorize]
-        [HttpPost("sendcommand")]
-        public IActionResult SendCommand([FromBody] Command cmd)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest();
-            }
+        [HttpPut]
+        public IActionResult UpdateServer([FromBody] ServerCredentials srvCredentials){
+            //get userId from Context
+            
+            // find server By ID && userId
 
-            var admin = new ServerAdmin(HttpContext.User.Identity);
+            // udate credentials object
 
-            var server = new Server(admin.ServerIp.ToString(), admin.ServerPort);
-            var rcon = new RCON(server.Ip, server.Port, admin.Password);
-            var result = rcon.SendCommandAsync(cmd.Cmd);
+            // save credentails object
 
-            return Ok(result);
+            // return Server Object
+            
+            return BadRequest();
+
+        }
+
+        [Authorize]
+        [HttpDelete("{id}")]
+        public IActionResult DeleteServer(string id){
+            // get user from context
+
+            // find servercredentials by userId && id
+
+            // delete
+
+            // return oK 
+            
+            return BadRequest();
+
+        }
+
+        [Authorize]
+        [HttpGet("list")]
+        public IActionResult ServerList(){
+            // get userID from context
+
+            // find all credentials by userId
+
+            // return all server Ids as array
+            
+            return BadRequest();
+
+        }
+
+        [Authorize]
+        [HttpPost("exec")]
+        public IActionResult ExecuteCommand([FromBody] Command cmd){
+            // find credentials by user id && server id
+
+            // execute command
+
+            // return result
+            
+            return BadRequest();
+
         }
     }
 }
