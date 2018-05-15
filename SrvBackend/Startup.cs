@@ -29,13 +29,13 @@ namespace SrvBackend
                 .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
                 {
-                    options.Authority = "https://securetoken.google.com/my-firebase-project";
+                    options.Authority = "https://securetoken.google.com/csgo-dash";
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuer = true,
-                        ValidIssuer = "https://securetoken.google.com/my-firebase-project",
+                        ValidIssuer = "https://securetoken.google.com/csgo-dash",
                         ValidateAudience = true,
-                        ValidAudience = "my-firebase-project",
+                        ValidAudience = "csgo-dash",
                         ValidateLifetime = true
                     };
                 });
@@ -49,6 +49,8 @@ namespace SrvBackend
             {
                 app.UseDeveloperExceptionPage();
             }
+
+            app.UseAuthentication();
 
             app.UseMvc();
         }
