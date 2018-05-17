@@ -11,7 +11,14 @@ namespace SrvBackend.Models
 {
     public class Server
     {
-        public Server(String ip, ushort port, string password, string displayName)
+        public static async Task<Server> CreateAsync(string ip, ushort port, string password, string displayName)
+        {
+            var server = new Server(ip, port, password, displayName);
+            await server.InitializeAsync();
+            return server;
+        }
+
+        private Server(String ip, ushort port, string password, string displayName)
         {
             Ip = IPAddress.Parse(ip);
             Port = port;
@@ -23,37 +30,41 @@ namespace SrvBackend.Models
 
         private RCON _connection => new RCON(Ip, Port, Password);
 
-        private Status _status
-        {
-            get
-            {
-                var task = _connection.SendCommandAsync<Status>("status");
-                task.Wait();
-                return task.Result;
-            }
-        }
+        private Status _status;
 
         private string Password { get; }
 
-        private SourceQueryInfo Info
+        private SourceQueryInfo _info;
+        private ServerQueryPlayer[] _players;
+
+        public ServerQueryPlayer[] Players => _players;
+        
+
+        private async Task InitializeAsync()
         {
-            get
-            {
-                Task<IQueryInfo> t = ServerQuery.Info(Ip, Port, ServerQuery.ServerType.Source);
-                t.Wait();
-                return (SourceQueryInfo) t.Result;
-            }
+            _status = await GetStatusAsync();
+            _info = await GetInfoAsync();
+            _players = await GetPlayersAsync();
         }
 
-        public string Name => Info.Name;
+        private async Task<Status> GetStatusAsync()
+            => await _connection.SendCommandAsync<Status>("status");
 
-        public bool IsRunning => Info != null ? true : false;
+        private async Task<SourceQueryInfo> GetInfoAsync()
+            => await ServerQuery.Info(Ip, Port, ServerQuery.ServerType.Source) as SourceQueryInfo;
 
-        public string Map => Info.Map;
+        private async Task<ServerQueryPlayer[]> GetPlayersAsync()
+            => await ServerQuery.Players(Ip, Port);
 
-        public byte ActivePlayers => Info.Players;
+        public string Name => _info.Name;
 
-        public byte MaxPlayers => Info.MaxPlayers;
+        public bool IsRunning => _info != null ? true : false;
+
+        public string Map => _info.Map;
+
+        public byte ActivePlayers => _info.Players;
+
+        public byte MaxPlayers => _info.MaxPlayers;
 
         public string Thumbnail
         {
@@ -64,21 +75,7 @@ namespace SrvBackend.Models
             }
         }
 
-        public ServerQueryPlayer[] Players
-        {
-            get
-            {
-                if (ActivePlayers > 0)
-                {
-                    var task = ServerQuery.Players(Ip, Port);
-                    task.Wait();
-                    return task.Result;
-                }
-
-                return null;
-            }
-        }
-
+        
         public string TopPlayer
         {
             get
@@ -93,7 +90,7 @@ namespace SrvBackend.Models
             }
         }
 
-        public bool IsVacSecured => Info.VAC == ServerVAC.Secured ? true : false;
+        public bool IsVacSecured => _info.VAC == ServerVAC.Secured ? true : false;
 
         public string[] Tags => _status.Tags;
 

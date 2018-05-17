@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 using CoreRCON;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -23,7 +24,7 @@ namespace SrvBackend.Controllers
 
         [Authorize]
         [HttpGet("{id}")]
-        public IActionResult ServerInfo(string id)
+        public async Task<IActionResult> ServerInfo(string id)
         {
             // Get User ID from HttpContext
 
@@ -33,7 +34,7 @@ namespace SrvBackend.Controllers
 
             if (serverCredentials != null)
             {
-                var server = new Server(serverCredentials.IpAddress, serverCredentials.Port,
+                var server = await Server.CreateAsync(serverCredentials.IpAddress, serverCredentials.Port,
                     serverCredentials.Password, serverCredentials.DisplayName);
                 return Ok(server);
             }
@@ -43,7 +44,7 @@ namespace SrvBackend.Controllers
 
         [Authorize]
         [HttpPost]
-        public IActionResult AddServer([FromBody] ServerCredentials srvCredentials)
+        public async Task<IActionResult> AddServer([FromBody] ServerCredentials srvCredentials)
         {
             if (ModelState.IsValid)
             {
@@ -58,7 +59,7 @@ namespace SrvBackend.Controllers
                 _ctx.SaveChanges();
 
                 // connect to server and create server object
-                var server = new Server(srvCredentials.IpAddress, srvCredentials.Port, srvCredentials.Password,
+                var server = await Server.CreateAsync(srvCredentials.IpAddress, srvCredentials.Port, srvCredentials.Password,
                     srvCredentials.DisplayName);
                 return Ok(server);
             }
@@ -68,7 +69,7 @@ namespace SrvBackend.Controllers
 
         [Authorize]
         [HttpPut]
-        public IActionResult UpdateServer([FromBody] ServerCredentials srvCredentials)
+        public async Task<IActionResult> UpdateServer([FromBody] ServerCredentials srvCredentials)
         {
             //get userId from Context
 
@@ -84,26 +85,29 @@ namespace SrvBackend.Controllers
             // save credentails object
 
             // return Server Object
-            var server = new Server(srvCredentials.IpAddress, srvCredentials.Port, srvCredentials.Password,
+            var server = Server.CreateAsync(srvCredentials.IpAddress, srvCredentials.Port, srvCredentials.Password,
                 srvCredentials.DisplayName);
             return Ok(server);
         }
 
         [Authorize]
         [HttpDelete("{id}")]
-        public IActionResult DeleteServer(string id)
+        public async Task<IActionResult> DeleteServer(string id)
         {
-            var _admin = new Admin(HttpContext.User.Claims);
-            var server = _ctx.Servers.Where(x => x.AdminId == _admin.AdminId).First(x => x.ServerCredentialsId == id);
-            _ctx.Servers.Remove(server);
-            // get user from context
+            return await Task.Run(() =>
+           {
+               var _admin = new Admin(HttpContext.User.Claims);
+               var server = _ctx.Servers.Where(x => x.AdminId == _admin.AdminId).First(x => x.ServerCredentialsId == id);
+               _ctx.Servers.Remove(server);
+               // get user from context
 
-            // find servercredentials by userId && id
+               // find servercredentials by userId && id
 
-            // delete
+               // delete
 
-            return Ok();
-            // return oK 
+               return Ok();
+               // return oK  
+           });
         }
 
         [Authorize]
