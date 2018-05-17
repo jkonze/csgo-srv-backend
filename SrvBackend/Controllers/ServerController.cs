@@ -16,12 +16,9 @@ namespace SrvBackend.Controllers
     {
         private readonly CSGOContext _ctx;
 
-        private readonly Admin _admin;
-
         public ServerController(CSGOContext ctx)
         {
             _ctx = ctx;
-            _admin = new Admin(HttpContext.User.Claims);
         }
 
         [Authorize]
@@ -29,6 +26,8 @@ namespace SrvBackend.Controllers
         public IActionResult ServerInfo(string id)
         {
             // Get User ID from HttpContext
+
+            var _admin = new Admin(HttpContext.User.Claims);
 
             var serverCredentials = _ctx.Servers.Where(s => s.AdminId == _admin.AdminId).First(s => s.ServerCredentialsId == id);
 
@@ -48,6 +47,7 @@ namespace SrvBackend.Controllers
         {
             if (ModelState.IsValid)
             {
+                var _admin = new Admin(HttpContext.User.Claims);
                 // get User ID from Context
 
                 // add user ID to credentials object
@@ -93,6 +93,7 @@ namespace SrvBackend.Controllers
         [HttpDelete("{id}")]
         public IActionResult DeleteServer(string id)
         {
+            var _admin = new Admin(HttpContext.User.Claims);
             var server = _ctx.Servers.Where(x => x.AdminId == _admin.AdminId).First(x => x.ServerCredentialsId == id);
             _ctx.Servers.Remove(server);
             // get user from context
@@ -111,6 +112,7 @@ namespace SrvBackend.Controllers
         {
             // get userID from context
 
+            var _admin = new Admin(HttpContext.User.Claims);
             var relatedServers = _ctx.Servers.Where(x => x.AdminId == _admin.AdminId);
 
             List<string> serverIdList = new List<string>();
@@ -131,6 +133,7 @@ namespace SrvBackend.Controllers
         [HttpPost("exec")]
         public IActionResult ExecuteCommand([FromBody] Command cmd)
         {
+            var _admin = new Admin(HttpContext.User.Claims);
             // find credentials by user id && server id
             var server = _ctx.Servers.Where(x => x.AdminId == _admin.AdminId)
                 .First(x => x.ServerCredentialsId == cmd.ServerId);

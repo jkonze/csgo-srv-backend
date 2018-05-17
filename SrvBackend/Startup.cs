@@ -57,7 +57,7 @@ namespace SrvBackend
                 app.UseDeveloperExceptionPage();
             }
 
-            context.Database.EnsureCreatedAsync();
+            context.Database.EnsureCreated();
 
             app.UseAuthentication();
 
